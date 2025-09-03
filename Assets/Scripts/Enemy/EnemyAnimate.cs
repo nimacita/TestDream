@@ -21,18 +21,33 @@ public class EnemyAnimate : MonoBehaviour
     public Action isAttackEnded;
     public Action isTakedDmg;
 
+    private bool lockedOnDeath;   // <<< добавили
+
     public void AnimationInit()
     {
         animator.SetFloat(moveAnimMultiplier, moveAnimSpeed);
+        lockedOnDeath = false;
+        animator.ResetTrigger(attackTrigger);
+        animator.ResetTrigger(damageTrigger);
+        animator.ResetTrigger(dieTrigger);
+        animator.SetBool(runBool, false);
+    }
+
+    public void SetRun(bool value)
+    {
+        if (lockedOnDeath) return;
+        if (animator.GetBool(runBool) != value)
+            animator.SetBool(runBool, value);
     }
 
     public void EnableAnim(EnemyAnim enemyAnim)
     {
+        if (lockedOnDeath) return;
+
         switch (enemyAnim)
         {
             case EnemyAnim.Run:
-                if(!animator.GetBool(runBool))
-                    animator.SetBool(runBool, true);
+                SetRun(true);
                 break;
             case EnemyAnim.Damage:
                 animator.SetTrigger(damageTrigger);
@@ -48,13 +63,35 @@ public class EnemyAnimate : MonoBehaviour
 
     public void DisableAnim(EnemyAnim enemyAnim)
     {
+        if (lockedOnDeath) return;
+
         switch (enemyAnim)
         {
             case EnemyAnim.Run:
-                if (animator.GetBool(runBool))
-                    animator.SetBool(runBool, false);
+                SetRun(false);
+                break;
+            case EnemyAnim.Damage:
+                animator.ResetTrigger(damageTrigger);
+                break;
+            case EnemyAnim.Die:
+                animator.ResetTrigger(dieTrigger);
+                break;
+            case EnemyAnim.Attack:
+                animator.ResetTrigger(attackTrigger);
                 break;
         }
+            
+    }
+
+    // Вызвать при смерти, чтобы никакие другие анимации не «перебили» смерть
+    public void PlayDieAndLock()
+    {
+        if (lockedOnDeath) return;
+        SetRun(false);
+        animator.ResetTrigger(attackTrigger);
+        animator.ResetTrigger(damageTrigger);
+        animator.SetTrigger(dieTrigger);
+        lockedOnDeath = true;
     }
 
     public void AttackInvoke()

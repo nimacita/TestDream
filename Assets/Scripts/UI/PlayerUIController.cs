@@ -5,6 +5,9 @@ using UnityEngine.UI;
 public class PlayerUIController : InitializedBehaviour
 {
 
+    [Header("Health Settings")]
+    [SerializeField] private TMP_Text currHealthTxt;
+
     [Header("Aim Settings")]
     [SerializeField] private RectTransform aimTarget;
     [SerializeField] private float minAimSize = 75f;
@@ -71,7 +74,9 @@ public class PlayerUIController : InitializedBehaviour
 
         return minAimSize + (maxAimSize - minAimSize) * Mathf.Clamp01(proportion);
     }
-#endregion
+    #endregion
+
+    #region Ammo
 
     public void UpdateAmmoTxt(int currAmmo, int maxAmmo)
     {
@@ -89,4 +94,14 @@ public class PlayerUIController : InitializedBehaviour
         reloadPanel.SetActive(false);
         realoadFillImg.fillAmount = 0f;
     }
+    #endregion
+
+    #region Health
+
+    public void SetCurrHealth(float currHealth)
+    {
+        currHealthTxt.text = $"{currHealth}";
+    }
+
+    #endregion
 }

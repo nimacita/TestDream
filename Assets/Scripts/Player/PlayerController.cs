@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,9 +6,15 @@ using UnityEngine;
 public class PlayerController : InitializedBehaviour
 {
 
+    [Header("Settings")]
+    [SerializeField] private PlayerSettings settings;
+
+    [Header("Health Settings")]
+    private float _currHealth;
+
     [Header("Movement Settings")]
-    private float _moveSpeed = 5f;
     private bool _isMove = false;
+    private bool _isDied;
 
     [Header("Components")]
     [SerializeField] private PlayerCamera _cameraController;
@@ -21,8 +28,12 @@ public class PlayerController : InitializedBehaviour
     private PlayerUIController _playerUIController;
 
     [Header("Weapon Settings")]
-    [SerializeField] private Weapon _currentWeapon;
+    private Weapon _currentWeapon;
     private bool _wasShootingLastFrame;
+
+    public Action onPlayerDieded;
+
+    public bool IsDied { get => _isDied; }
 
     public override void Entry(params object[] dependencies)
     {
@@ -36,15 +47,29 @@ public class PlayerController : InitializedBehaviour
         _rigidbody.freezeRotation = true;
         _wasShootingLastFrame = false;
 
+        _currHealth = settings.startHealth;
+        _playerUIController.SetCurrHealth(_currHealth);
+        _isDied = false;
+
+        Subscribed();
         SetupInputProvider();
         EquipWeapon();
     }
 
+    private void Subscribed()
+    {
+        EnemyBase.onPlayerDamaged += TakeDamage;
+    }
+
+    private void Unsubscribed()
+    {
+        EnemyBase.onPlayerDamaged -= TakeDamage;
+    }
+
     private void SetupInputProvider()
     {
-        //_inputProvider = new JoystickInput(playerJoystick);
         _inputProvider = new KeyBoardInput();
-        _cameraController.Init(_inputProvider, transform);
+        _cameraController.Init(_inputProvider, transform, settings);
     }
 
     void Update()
@@ -61,7 +86,7 @@ public class PlayerController : InitializedBehaviour
 
     private void HandleWeaponInput()
     {
-        if (_inputProvider == null || _currentWeapon == null) return;
+        if (_inputProvider == null || _currentWeapon == null || _isDied) return;
 
         // Обработка стрельбы для разных типов input providers
         if (_inputProvider is KeyBoardInput)
@@ -125,13 +150,11 @@ public class PlayerController : InitializedBehaviour
     {
         if (weaponHolder == null) return;
 
-        // Обработка цифровых клавиш для смены оружия
         if (Input.GetKeyDown(KeyCode.Alpha1)) EquipWeapon(0);
         if (Input.GetKeyDown(KeyCode.Alpha2)) EquipWeapon(1);
         if (Input.GetKeyDown(KeyCode.Alpha3)) EquipWeapon(2);
         if (Input.GetKeyDown(KeyCode.Alpha4)) EquipWeapon(3);
 
-        // Колесико мыши для пролистывания оружия
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll > 0f)
         {
@@ -170,17 +193,16 @@ public class PlayerController : InitializedBehaviour
 
     private void HandleMovement()
     {
-        if (_inputProvider == null) return;
+        if (_inputProvider == null || _isDied) return;
 
         Vector2 input = _inputProvider.GetMovementInput();
 
         if (input.magnitude > 0.1f)
         {
-            // Двигаемся вперед-назад относительно взгляда игрока
             Vector3 moveDirection = new Vector3(input.x, 0, input.y);
             moveDirection = transform.TransformDirection(moveDirection);
 
-            Vector3 movement = moveDirection * _moveSpeed * Time.fixedDeltaTime;
+            Vector3 movement = moveDirection * settings.moveSpeed * Time.fixedDeltaTime;
             _rigidbody.MovePosition(_rigidbody.position + movement);
             _isMove = true;
         }
@@ -192,5 +214,34 @@ public class PlayerController : InitializedBehaviour
 
     #endregion
 
-    public void SetMoveSpeed(float speed) => _moveSpeed = speed;
+    #region Take Damage
+
+    public void TakeDamage(float damage)
+    {
+        if (_isDied) return;
+
+        _currHealth -= damage;
+        if(_currHealth <= 0f)
+        {
+            _currHealth = 0f;
+            PlayerDie();
+        }
+        _playerUIController.SetCurrHealth(_currHealth);
+    }
+
+    private void PlayerDie()
+    {
+        _isDied = true;
+        _cameraController.PlayerDied();
+        onPlayerDieded?.Invoke();
+    }
+
+    #endregion
+
+    private void OnDestroy()
+    {
+        Unsubscribed();
+    }
+
+    public void SetMoveSpeed(float speed) => settings.moveSpeed = speed;
 }

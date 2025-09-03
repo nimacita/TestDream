@@ -8,4 +8,19 @@ namespace Utilities.Enums
         Die,
         Damage,
     }
+
+    public enum EnemyType
+    {
+        Melle,
+        Range,
+    }
+
+    public enum RangedState
+    {
+        Chase,          
+        Shoot,         
+        Flee,           
+        HitRetreat,   
+        Dead
+    }
 }

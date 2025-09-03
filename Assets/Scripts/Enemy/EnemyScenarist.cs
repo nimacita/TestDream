@@ -24,4 +24,12 @@ public class EnemyScenarist : InitializedBehaviour
             enemy.Initialize(_playerTr);
         }
     }
+
+    public void GameEnd()
+    {
+        foreach (var enemy in enemys)
+        {
+            enemy.GameEnd();
+        }
+    }
 }
