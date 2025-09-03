@@ -8,4 +8,7 @@ public interface IInputProvider
     Vector2 GetTouchDelta();
     bool GetShootInput();
     bool GetReloadInput();
+
+    int? GetWeaponNumberInput();
+    float GetWeaponScrollInput();
 }

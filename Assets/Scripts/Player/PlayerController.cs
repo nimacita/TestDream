@@ -145,35 +145,25 @@ public class PlayerController : InitializedBehaviour
     {
         if (weaponHolder == null) return;
 
-        if (Input.GetKeyDown(KeyCode.Alpha1)) EquipWeapon(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) EquipWeapon(1);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) EquipWeapon(2);
-        if (Input.GetKeyDown(KeyCode.Alpha4)) EquipWeapon(3);
+        int? weaponIndex = _inputProvider.GetWeaponNumberInput();
+        if (weaponIndex.HasValue)
+        {
+            EquipWeapon(weaponIndex.Value);
+        }
 
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        float scroll = _inputProvider.GetWeaponScrollInput();
         if (scroll > 0f)
         {
-            int nextind = weaponHolder.EquipNextWeapon();
-            EquipWeapon(nextind);
+            int nextIndex = weaponHolder.EquipNextWeapon();
+            EquipWeapon(nextIndex);
         }
         else if (scroll < 0f)
         {
-            int prewInd = weaponHolder.EquipPreviousWeapon();
-            EquipWeapon(prewInd);
+            int prevIndex = weaponHolder.EquipPreviousWeapon();
+            EquipWeapon(prevIndex);
         }
-        _currentWeapon = weaponHolder.CurrentWeapon;
-    }
 
-    private void HandleTouchWeaponInput()
-    {
-        if (_inputProvider.GetShootInput())
-        {
-            _currentWeapon.StartShooting();
-        }
-        else
-        {
-            _currentWeapon.StopShooting();
-        }
+        _currentWeapon = weaponHolder.CurrentWeapon;
     }
 
     public void EquipWeapon(int weaponIndex = 0)
