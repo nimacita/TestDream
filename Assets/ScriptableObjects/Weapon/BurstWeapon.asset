@@ -20,9 +20,9 @@ MonoBehaviour:
   reloadTime: 3
   burstCount: 3
   burstDelay: 0.2
-  spreadAngle: 0.3
+  spreadAngle: 0.15
   maxSpreadAngle: 2
-  spreadIncreasePerShot: 1
+  spreadIncreasePerShot: 0.4
   spreadRecoveryRate: 4
   shootSound: {fileID: 0}
   reloadSound: {fileID: 0}

@@ -19,7 +19,7 @@ public class PlayerController : InitializedBehaviour
     [Header("Components")]
     [SerializeField] private PlayerCamera _cameraController;
     [SerializeField] private WeaponHolder weaponHolder;
-    [SerializeField] private Joystick playerJoystick;
+    [SerializeField] private PlayerAnim playerAnim;
     private Camera playerCamera;
     private Rigidbody _rigidbody;
     private IInputProvider _inputProvider;
@@ -80,6 +80,7 @@ public class PlayerController : InitializedBehaviour
     private void FixedUpdate()
     {
         HandleMovement();
+        DefineDirection();
     }
 
     #region Player Wapon
@@ -88,20 +89,19 @@ public class PlayerController : InitializedBehaviour
     {
         if (_inputProvider == null || _currentWeapon == null || _isDied) return;
 
-        // Обработка стрельбы для разных типов input providers
         if (_inputProvider is KeyBoardInput)
         {
             HandleKeyboardWeaponInput();
         }
-        else
-        {
-            HandleTouchWeaponInput();
-        }
 
-        // Обработка перезарядки
         if (_inputProvider.GetReloadInput())
         {
             _currentWeapon.Reload();
+        }
+
+        if (_currentWeapon != null)
+        {
+            ReloadWeaponAnim(_currentWeapon.IsReloading);
         }
     }
 
@@ -139,11 +139,6 @@ public class PlayerController : InitializedBehaviour
         }
 
         _wasShootingLastFrame = isShootingInput;
-
-        if (_inputProvider.GetReloadInput())
-        {
-            _currentWeapon.Reload();
-        }
     }
 
     private void HandleWeaponSwitchInput()
@@ -158,11 +153,13 @@ public class PlayerController : InitializedBehaviour
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll > 0f)
         {
-            weaponHolder.EquipNextWeapon();
+            int nextind = weaponHolder.EquipNextWeapon();
+            EquipWeapon(nextind);
         }
         else if (scroll < 0f)
         {
-            weaponHolder.EquipPreviousWeapon();
+            int prewInd = weaponHolder.EquipPreviousWeapon();
+            EquipWeapon(prewInd);
         }
         _currentWeapon = weaponHolder.CurrentWeapon;
     }
@@ -181,8 +178,16 @@ public class PlayerController : InitializedBehaviour
 
     public void EquipWeapon(int weaponIndex = 0)
     {
+        if (!weaponHolder.IsCurrWeapon(weaponIndex)) 
+            playerAnim.SetReload(false);
+
         weaponHolder.EquipWeapon(weaponIndex);
         _currentWeapon = weaponHolder.CurrentWeapon;
+    }
+
+    private void ReloadWeaponAnim(bool reloadState)
+    {
+        playerAnim.SetReload(reloadState);
     }
 
     public Weapon GetCurrentWeapon() => weaponHolder.CurrentWeapon;
@@ -212,6 +217,57 @@ public class PlayerController : InitializedBehaviour
         }
     }
 
+    private void DefineDirection()
+    {
+        if (_inputProvider == null) return;
+
+        Vector2 input = _inputProvider.GetMovementInput();
+
+        if (input.magnitude <= 0.1f)
+        {
+            playerAnim.SetActiveRun(false);
+            playerAnim.SetActiveRight(false);
+            playerAnim.SetActiveLeft(false);
+            playerAnim.SetActiveBack(false);
+            return;
+        }
+
+        Vector3 worldDirection = transform.TransformDirection(new Vector3(input.x, 0, input.y));
+        worldDirection.Normalize();
+
+        float angle = Vector3.SignedAngle(transform.forward, worldDirection, Vector3.up);
+        bool isMovingForward = Mathf.Abs(angle) < 45f;
+        bool isMovingBackward = Mathf.Abs(angle) > 135f;
+        bool isMovingRight = angle > 0 && angle <= 135f;
+        bool isMovingLeft = angle < 0 && angle >= -135f;
+
+        playerAnim.SetActiveRun(_isMove);
+        if (isMovingForward)
+        {
+            playerAnim.SetActiveBack(false);
+            playerAnim.SetActiveRight(false);
+            playerAnim.SetActiveLeft(false);
+        }
+        else if (isMovingBackward)
+        {
+            playerAnim.SetActiveBack(true);
+            playerAnim.SetActiveRight(false);
+            playerAnim.SetActiveLeft(false);
+        }
+        else if (isMovingRight)
+        {
+            playerAnim.SetActiveBack(false);
+            playerAnim.SetActiveRight(true);
+            playerAnim.SetActiveLeft(false);
+        }
+        else if (isMovingLeft)
+        {
+            playerAnim.SetActiveBack(false);
+            playerAnim.SetActiveRight(false);
+            playerAnim.SetActiveLeft(true);
+        }
+    }
+
     #endregion
 
     #region Take Damage
@@ -233,6 +289,7 @@ public class PlayerController : InitializedBehaviour
     {
         _isDied = true;
         _cameraController.PlayerDied();
+        _currentWeapon.StopShooting();
         onPlayerDieded?.Invoke();
     }
 

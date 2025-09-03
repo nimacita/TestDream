@@ -13,15 +13,31 @@ MonoBehaviour:
   m_Name: WolfEnemy
   m_EditorClassIdentifier: 
   enemyName: Wolf
+  enemyType: 0
   moveSpeed: 3.5
   stoppingDistance: 1.5
   acceleration: 8
   angularSpeed: 360
+  startHealth: 100
+  attackDamage: 20
   attackRange: 3
   attackCooldown: 1
   attackWindupTime: 0.5
-  attackDamage: 10
-  startHealth: 100
+  safeDistance: 15
+  minAttackDistance: 20
+  fireRate: 0.5
+  initialPoolSize: 3
+  projectileSpeed: 30
+  maxProjectileDistance: 50
+  panicDistance: 6
+  panicMoveRadius: 6
+  panicRecalcTime: 1
+  panicPointSearchAttempts: 10
+  panicSpeed: 6
+  retreatDuration: 2
+  retreatStep: 4
+  stateChangeCooldown: 0.25
   headshotMultiplier: 2
   bodyshotMultiplier: 1
   limbMultiplier: 0.7
+  dieDisabledtime: 8

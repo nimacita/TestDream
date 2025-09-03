@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weaponName: Auto Weapon
   fireMode: 1
-  damage: 5
+  damage: 7
   fireRate: 8
   maxAmmo: 30
   reloadTime: 3

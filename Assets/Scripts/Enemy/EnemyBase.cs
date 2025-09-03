@@ -29,6 +29,8 @@ public abstract class EnemyBase : MonoBehaviour
     protected float lastAttackTime;
 
     public static Action<float> onPlayerDamaged;
+    public static Action onEnemyDied;
+    public EnemySettings Settings { get => settings; }
 
     public virtual void Initialize(Transform playerTransform)
     {
@@ -42,6 +44,17 @@ public abstract class EnemyBase : MonoBehaviour
         enemyAnimate.AnimationInit();
 
         SubscribeAnimations();
+    }
+
+    public virtual void Respawn()
+    {
+        isAttacking = false;
+        isInWindup = false;
+        isTakingDamage = false;
+        isMove = false;
+
+        EnableEnemy();
+        enemyAnimate.AnimationInit();
     }
 
     protected virtual void SubscribeAnimations()
@@ -74,7 +87,6 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (isGameEnded) return;
         IsMoving();
         HandleMovement();
         HandleRotationCanvas();
@@ -84,9 +96,9 @@ public abstract class EnemyBase : MonoBehaviour
     {
         isGameEnded = true;
         isMove = false;
-        navMeshAgent.isStopped = true;
-        enemyAnimate.DisableAnim(EnemyAnim.Run);
         InterruptAttack();
+        enemyAnimate.DisableAnim(EnemyAnim.Run);
+        if (gameObject.activeSelf) navMeshAgent.isStopped = true;
     }
 
     protected abstract void HandleMovement();
@@ -94,15 +106,15 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void IsMoving()
     {
         if (navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh 
-            && isAlive && !isInWindup && !isAttacking && !isTakingDamage) 
+            && isAlive && !isInWindup && !isAttacking && !isTakingDamage && !isGameEnded) 
         {
             isMove = true;
-            navMeshAgent.isStopped = false;
+            if (gameObject.activeSelf) navMeshAgent.isStopped = false;
         } 
         else 
         {
             isMove = false;
-            navMeshAgent.isStopped = true;
+            if (gameObject.activeSelf) navMeshAgent.isStopped = true;
         }
     }
 
@@ -121,22 +133,22 @@ public abstract class EnemyBase : MonoBehaviour
         float multiplier = GetDamageMultiplier(hitTrigger);
         float finalDamage = damage * multiplier;
 
-        if (IsHeadshot(hitTrigger))
-        {
-            InterruptAttack();
-            PlayDamageAnimation();
-        }
-
         currentHealth -= finalDamage;
         enemyCanvas.ChangeHealth(currentHealth, settings.startHealth);
 
         if (currentHealth <= 0)
             Die();
+
+        if (IsHeadshot(hitTrigger))
+        {
+            InterruptAttack();
+            PlayDamageAnimation();
+        }
     }
 
     protected virtual void PlayDamageAnimation()
     {
-        if (isTakingDamage) return;
+        if (isTakingDamage || !isAlive) return;
         isTakingDamage = true;
         enemyAnimate.EnableAnim(EnemyAnim.Damage);
     }
@@ -152,6 +164,8 @@ public abstract class EnemyBase : MonoBehaviour
         enemyAnimate.EnableAnim(EnemyAnim.Die);
         enemyCanvas.gameObject.SetActive(false);
 
+        onEnemyDied?.Invoke();
+
         if (afterDeadCoroutine == null)
             afterDeadCoroutine = StartCoroutine(AfterDeadWaiting());
 
@@ -164,6 +178,7 @@ public abstract class EnemyBase : MonoBehaviour
     {
         yield return new WaitForSeconds(settings.dieDisabledtime);
         gameObject.SetActive(false);
+        afterDeadCoroutine = null;
     }
 
     protected virtual float GetDamageMultiplier(Collider hitTrigger)

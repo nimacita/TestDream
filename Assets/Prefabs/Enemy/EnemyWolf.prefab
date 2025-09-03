@@ -1636,7 +1636,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 4316113554513475059}
-  moveAnimSpeed: 1.5
+  moveAnimSpeed: 1.2
   moveAnimMultiplier: MoveMultiplier
   runBool: Run
   attackTrigger: Bite Attack

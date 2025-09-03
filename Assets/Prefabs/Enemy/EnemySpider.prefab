@@ -275,6 +275,8 @@ MonoBehaviour:
   enemyAnimate: {fileID: 6038820760221369508}
   shootPoint: {fileID: 6583177394326275162}
   projectilePrefab: {fileID: 1479554116282456410, guid: e6f98abcee9754941b75e6890a04bf24, type: 3}
+  stateCooldownTimer: 0
+  state: 0
 --- !u!54 &8373322271579742286
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -655,7 +657,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 2552955172474275472}
-  moveAnimSpeed: 1
+  moveAnimSpeed: 1.1
   moveAnimMultiplier: SpeedMulti
   runBool: Run
   attackTrigger: Attack

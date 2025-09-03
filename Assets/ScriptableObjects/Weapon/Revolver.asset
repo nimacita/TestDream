@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weaponName: Revolver
   fireMode: 0
-  damage: 15
+  damage: 12
   fireRate: 1
   maxAmmo: 6
   reloadTime: 2

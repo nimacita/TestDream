@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PlayerUIController : InitializedBehaviour
 {
@@ -12,8 +13,17 @@ public class PlayerUIController : InitializedBehaviour
     [SerializeField] private RectTransform aimTarget;
     [SerializeField] private float minAimSize = 75f;
     [SerializeField] private float maxAimSize = 200f;
-    [SerializeField] private float lerpSpeed = 0.5f; // —корость интерпол€ции
+    [SerializeField] private float lerpSpeed = 0.5f;
     [SerializeField] private float spreadProportionCoefficient = 1.2f;
+
+    [Header("Game Over")]
+    [SerializeField] private GameObject gameOverView;
+    [SerializeField] private TMP_Text currScoreTxt;
+    [SerializeField] private TMP_Text maxScoreTxt;
+    [SerializeField] private Button restartBtn;
+
+    [Header("Record Settings")]
+    [SerializeField] private TMP_Text recordTxt;
 
     [Header("Ammo Settings")]
     [SerializeField] private TMP_Text ammoTxt;
@@ -30,6 +40,8 @@ public class PlayerUIController : InitializedBehaviour
     public override void Entry(params object[] dependencies)
     {
         UpdateReloadProgress(1f);
+        gameOverView.SetActive(false);
+        restartBtn.onClick.AddListener(RestartBtnClick);
     }
 
     void Update()
@@ -104,4 +116,36 @@ public class PlayerUIController : InitializedBehaviour
     }
 
     #endregion
+
+    #region Record
+
+    public void UpdateRecord(int currRecord)
+    {
+        recordTxt.text = $"{currRecord}";
+    }
+
+    #endregion
+
+    #region Game Over
+
+    public void OpenGameOverView(int currentScore, int maxScore)
+    {
+        if (gameOverView.activeSelf) return;
+
+        currScoreTxt.text = $"{currentScore}";
+        maxScoreTxt.text = $"{maxScore}";
+        gameOverView.SetActive(true);
+    }
+
+    private void RestartBtnClick()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    #endregion
+
+    private void OnDestroy()
+    {
+        restartBtn.onClick.RemoveListener(RestartBtnClick);
+    }
 }

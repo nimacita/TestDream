@@ -14,20 +14,34 @@ public class EnemyRange : EnemyBase
     private Vector3 panicTarget;
     private readonly List<GameObject> projectilePool = new();
     private float lastShotTime;
-    private float stateCooldownTimer;
+    [SerializeField] private float stateCooldownTimer;
     private float retreatTimer;
     private bool pendingRetreatAfterHit; 
-    private RangedState state = RangedState.Chase;
+    [SerializeField] private RangedState state = RangedState.Chase;
 
     public override void Initialize(Transform playerTransform)
     {
         base.Initialize(playerTransform);
-
-        if (settings.minAttackDistance <= settings.safeDistance) settings.minAttackDistance = settings.safeDistance + 1f;
-        if (settings.panicDistance >= settings.safeDistance) settings.panicDistance = Mathf.Max(0.1f, settings.safeDistance * 0.4f);
-
+        ValidateSettings();
         InitializeProjectilePool();
 
+        navMeshAgent.speed = settings.moveSpeed;
+        state = RangedState.Chase;
+        stateCooldownTimer = 0f;
+    }
+
+    private void ValidateSettings()
+    {
+        if (settings.minAttackDistance <= settings.safeDistance)
+            settings.minAttackDistance = settings.safeDistance + 1f;
+
+        if (settings.panicDistance >= settings.safeDistance)
+            settings.panicDistance = Mathf.Max(0.1f, settings.safeDistance * 0.4f);
+    }
+
+    public override void Respawn()
+    {
+        base.Respawn();
         navMeshAgent.speed = settings.moveSpeed;
         state = RangedState.Chase;
         stateCooldownTimer = 0f;
@@ -36,113 +50,172 @@ public class EnemyRange : EnemyBase
     private void InitializeProjectilePool()
     {
         projectilePool.Clear();
+
         for (int i = 0; i < settings.initialPoolSize; i++)
         {
-            var proj = Instantiate(projectilePrefab);
-            proj.SetActive(false);
-            proj.transform.parent = shootPoint;
-            proj.GetComponent<Projectile>().onPlayerDamaged += PlayerDamaged;
-            projectilePool.Add(proj);
+            CreatePooledProjectile();
         }
+    }
+
+    private void CreatePooledProjectile()
+    {
+        var projectile = Instantiate(projectilePrefab);
+        projectile.SetActive(false);
+        //projectile.transform.parent = shootPoint;
+
+        var projectileComponent = projectile.GetComponent<Projectile>();
+        projectileComponent.onPlayerDamaged += PlayerDamaged;
+
+        projectilePool.Add(projectile);
     }
 
     protected override void HandleMovement()
     {
-        if (player == null || !isAlive)
-        {
-            state = isAlive ? state : RangedState.Dead;
-            return;
-        }
+        if (!CanProcessMovement()) return;
+        if (!isGameEnded) return;
 
-        float dist = Vector3.Distance(transform.position, player.position);
-        stateCooldownTimer -= Time.deltaTime;
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+        if(stateCooldownTimer > 0f) stateCooldownTimer -= Time.deltaTime;
+        else stateCooldownTimer = 0f;
 
         switch (state)
         {
             case RangedState.HitRetreat:
-                enemyAnimate.DisableAnim(EnemyAnim.Attack);
-                RetreatFromPlayer(settings.retreatStep * 1.25f);
-                retreatTimer -= Time.deltaTime;
-                if (retreatTimer <= 0f && stateCooldownTimer <= 0f)
-                {
-                    state = DecideStateByDistance(dist);
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                }
+                HandleHitRetreatState(distanceToPlayer);
                 break;
 
             case RangedState.Flee:
-                enemyAnimate.DisableAnim(EnemyAnim.Attack);
-                navMeshAgent.speed = settings.panicSpeed;
-
-                panicRecalcTimer -= Time.deltaTime;
-                if (panicRecalcTimer <= 0f || Vector3.Distance(transform.position, panicTarget) < 1f)
-                {
-                    panicTarget = GetRandomPanicPoint();
-                    panicRecalcTimer = settings.panicRecalcTime;
-
-                    if (panicTarget == Vector3.zero)
-                    {
-                        state = RangedState.Shoot;
-                        stateCooldownTimer = settings.stateChangeCooldown;
-                        break;
-                    }
-                }
-
-                if (navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
-                    navMeshAgent.SetDestination(panicTarget);
-
-                if (dist > settings.safeDistance && stateCooldownTimer <= 0f)
-                {
-                    state = RangedState.Shoot;
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                }
+                HandleFleeState(distanceToPlayer);
                 break;
 
             case RangedState.Shoot:
-                navMeshAgent.speed = settings.moveSpeed;
-                if (dist <= settings.panicDistance)
-                {
-                    state = RangedState.Flee;
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                    break;
-                }
-                if (dist > settings.minAttackDistance && stateCooldownTimer <= 0f)
-                {
-                    state = RangedState.Chase;
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                    break;
-                }
-
-                StopAgent();
-                LookAtPlayer();
-                TryAttack(); 
+                HandleShootState(distanceToPlayer);
                 break;
 
             case RangedState.Chase:
-                enemyAnimate.DisableAnim(EnemyAnim.Attack);
-                navMeshAgent.speed = settings.moveSpeed;
-                if (dist <= settings.safeDistance && stateCooldownTimer <= 0f)
-                {
-                    state = RangedState.Flee;
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                }
-                else if (dist > settings.safeDistance && dist <= settings.minAttackDistance && stateCooldownTimer <= 0f)
-                {
-                    state = RangedState.Shoot;
-                    stateCooldownTimer = settings.stateChangeCooldown;
-                }
-                else
-                {
-                    ApproachPlayer();
-                }
+                HandleChaseState(distanceToPlayer);
                 break;
 
             case RangedState.Dead:
-                StopAgent();
-                return;
+                HandleDeadState();
+                break;
         }
 
         UpdateRunAnimation();
+    }
+
+    private bool CanProcessMovement()
+    {
+        if (player == null || !isAlive)
+        {
+            state = isAlive ? state : RangedState.Dead;
+            return false;
+        }
+        return true;
+    }
+
+    private void HandleHitRetreatState(float distanceToPlayer)
+    {
+        enemyAnimate.DisableAnim(EnemyAnim.Attack);
+        RetreatFromPlayer(settings.retreatStep * 1.25f);
+
+        retreatTimer -= Time.deltaTime;
+
+        if (retreatTimer <= 0f && stateCooldownTimer <= 0f)
+        {
+            state = DecideStateByDistance(distanceToPlayer);
+            stateCooldownTimer = settings.stateChangeCooldown;
+        }
+    }
+
+    private void HandleFleeState(float distanceToPlayer)
+    {
+        enemyAnimate.DisableAnim(EnemyAnim.Attack);
+        navMeshAgent.speed = settings.panicSpeed;
+
+        UpdatePanicTarget();
+        MoveToPanicTarget();
+
+        if (distanceToPlayer > settings.safeDistance && stateCooldownTimer <= 0f)
+        {
+            state = RangedState.Shoot;
+            stateCooldownTimer = settings.stateChangeCooldown;
+        }
+    }
+
+    private void UpdatePanicTarget()
+    {
+        panicRecalcTimer -= Time.deltaTime;
+
+        if (panicRecalcTimer <= 0f || Vector3.Distance(transform.position, panicTarget) < 1f)
+        {
+            panicTarget = GetRandomPanicPoint();
+            panicRecalcTimer = settings.panicRecalcTime;
+
+            if (panicTarget == Vector3.zero)
+            {
+                state = RangedState.Shoot;
+                stateCooldownTimer = settings.stateChangeCooldown;
+            }
+        }
+    }
+
+    private void MoveToPanicTarget()
+    {
+        if (navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
+            navMeshAgent.SetDestination(panicTarget);
+    }
+
+    private void HandleShootState(float distanceToPlayer)
+    {
+        navMeshAgent.speed = settings.moveSpeed;
+
+        if (distanceToPlayer <= settings.panicDistance)
+        {
+            state = RangedState.Flee;
+            stateCooldownTimer = settings.stateChangeCooldown;
+            return;
+        }
+
+        if (distanceToPlayer > settings.minAttackDistance && stateCooldownTimer <= 0f)
+        {
+            state = RangedState.Chase;
+            stateCooldownTimer = settings.stateChangeCooldown;
+            return;
+        }
+
+        StopAgent();
+        LookAtPlayer();
+        TryAttack();
+    }
+
+    private void HandleChaseState(float distanceToPlayer)
+    {
+        enemyAnimate.DisableAnim(EnemyAnim.Attack);
+        navMeshAgent.speed = settings.moveSpeed;
+
+        if (distanceToPlayer <= settings.safeDistance && stateCooldownTimer <= 0f)
+        {
+            state = RangedState.Flee;
+            stateCooldownTimer = settings.stateChangeCooldown;
+        }
+        else if (distanceToPlayer > settings.safeDistance &&
+                 distanceToPlayer <= settings.minAttackDistance &&
+                 stateCooldownTimer <= 0f)
+        {
+            state = RangedState.Shoot;
+            stateCooldownTimer = settings.stateChangeCooldown;
+        }
+        else
+        {
+            ApproachPlayer();
+        }
+    }
+
+    private void HandleDeadState()
+    {
+        StopAgent();
     }
 
     protected override void IsMoving()
@@ -200,9 +273,9 @@ public class EnemyRange : EnemyBase
     {
         if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh) return;
 
-        Vector3 away = (transform.position - player.position).normalized;
-        Vector3 target = transform.position + away * Mathf.Max(2f, step);
-        navMeshAgent.SetDestination(target);
+        Vector3 awayDirection = (transform.position - player.position).normalized;
+        Vector3 retreatTarget = transform.position + awayDirection * Mathf.Max(2f, step);
+        navMeshAgent.SetDestination(retreatTarget);
     }
 
     private void ApproachPlayer()
@@ -213,27 +286,27 @@ public class EnemyRange : EnemyBase
 
     private void LookAtPlayer()
     {
-        Vector3 dir = (player.position - transform.position);
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.001f)
-            transform.rotation = Quaternion.LookRotation(dir.normalized);
+        Vector3 direction = (player.position - transform.position);
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.001f)
+            transform.rotation = Quaternion.LookRotation(direction.normalized);
     }
 
-    private RangedState DecideStateByDistance(float dist)
+    private RangedState DecideStateByDistance(float distance)
     {
-        if (dist <= settings.safeDistance) return RangedState.Flee;
-        if (dist <= settings.minAttackDistance) return RangedState.Shoot;
+        if (distance <= settings.safeDistance) return RangedState.Flee;
+        if (distance <= settings.minAttackDistance) return RangedState.Shoot;
         return RangedState.Chase;
     }
 
     private void UpdateRunAnimation()
     {
-        bool shouldRun =
-            isAlive &&
-            !isTakingDamage &&
-            state != RangedState.Shoot &&
-            state != RangedState.Dead &&
-            navMeshAgent.isActiveAndEnabled;
+        bool shouldRun = isAlive &&
+                        !isTakingDamage &&
+                        state != RangedState.Shoot &&
+                        state != RangedState.Dead &&
+                        navMeshAgent.isActiveAndEnabled;
 
         enemyAnimate.SetRun(shouldRun);
     }
@@ -242,7 +315,7 @@ public class EnemyRange : EnemyBase
     {
         if (Time.time - lastShotTime < 1f / settings.fireRate) return;
 
-        isAttacking = true;         
+        isAttacking = true;
         enemyAnimate.EnableAnim(EnemyAnim.Attack);
         lastShotTime = Time.time;
     }
@@ -259,10 +332,10 @@ public class EnemyRange : EnemyBase
         projectile.transform.position = shootPoint.position;
         projectile.gameObject.SetActive(true);
 
-        Vector3 dir = (player.position - shootPoint.position).normalized;
+        Vector3 direction = (player.position - shootPoint.position).normalized;
 
-        var proj = projectile.GetComponent<Projectile>();
-        proj.Launch(dir, settings.projectileSpeed, settings.maxProjectileDistance);
+        var projectileComponent = projectile.GetComponent<Projectile>();
+        projectileComponent.Launch(direction, settings.projectileSpeed, settings.maxProjectileDistance);
     }
 
     private void PlayerDamaged()
@@ -275,14 +348,21 @@ public class EnemyRange : EnemyBase
         foreach (var projectile in projectilePool)
         {
             if (!projectile.activeInHierarchy)
-            {
                 return projectile;
-            }
         }
+
+        return CreateNewProjectile();
+    }
+
+    private GameObject CreateNewProjectile()
+    {
         GameObject newProjectile = Instantiate(projectilePrefab);
-        newProjectile.transform.parent = shootPoint;
+        //newProjectile.transform.parent = shootPoint;
         newProjectile.SetActive(false);
-        newProjectile.GetComponent<Projectile>().onPlayerDamaged += PlayerDamaged;
+
+        var projectileComponent = newProjectile.GetComponent<Projectile>();
+        projectileComponent.onPlayerDamaged += PlayerDamaged;
+
         projectilePool.Add(newProjectile);
         return newProjectile;
     }
@@ -291,8 +371,8 @@ public class EnemyRange : EnemyBase
     {
         if (!isAlive) return;
 
-        float final = damage * GetDamageMultiplier(hitTrigger);
-        currentHealth -= final;
+        float finalDamage = damage * GetDamageMultiplier(hitTrigger);
+        currentHealth -= finalDamage;
         enemyCanvas.ChangeHealth(currentHealth, settings.startHealth);
 
         if (currentHealth <= 0f)
@@ -303,7 +383,7 @@ public class EnemyRange : EnemyBase
 
         if (state == RangedState.Shoot)
         {
-            pendingRetreatAfterHit = true; 
+            pendingRetreatAfterHit = true;
             InterruptAttack();
             PlayDamageAnimation();
         }
@@ -317,11 +397,11 @@ public class EnemyRange : EnemyBase
 
         if (pendingRetreatAfterHit)
         {
-            pendingRetreatAfterHit = false;
             state = RangedState.HitRetreat;
             retreatTimer = settings.retreatDuration;
             navMeshAgent.speed = settings.panicSpeed;
             stateCooldownTimer = settings.stateChangeCooldown;
+            pendingRetreatAfterHit = false;
         }
     }
 
@@ -331,16 +411,15 @@ public class EnemyRange : EnemyBase
         state = RangedState.Dead;
 
         StopAgent();
-        if (navMeshAgent != null) navMeshAgent.enabled = false;
-        enemyAnimate.PlayDieAndLock(); 
+
+        //if (navMeshAgent != null)
+            //navMeshAgent.enabled = false;
+
+        enemyAnimate.PlayDieAndLock();
     }
 
     protected override void OnDestroy()
     {
-        foreach (GameObject projectile in projectilePool)
-        {
-            projectile.GetComponent<Projectile>().onPlayerDamaged -= PlayerDamaged;
-        }
         base.OnDestroy();
     }
 
@@ -348,18 +427,17 @@ public class EnemyRange : EnemyBase
     protected override bool IsLimb(Collider hitTrigger) => false;
 
 #if UNITY_EDITOR
-
     private void OnDrawGizmosSelected()
     {
-        // Отображаем радиус безопасной зоны
+        // Safe zone radius
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, settings.safeDistance);
 
-        //зона атаки
+        // Attack zone radius
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, settings.minAttackDistance);
 
-        //зона паники
+        // Panic zone radius
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, settings.panicDistance);
     }

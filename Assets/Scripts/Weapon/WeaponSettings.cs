@@ -31,9 +31,9 @@ public class WeaponSettings : ScriptableObject
     [Header("Spread Settings")]
     [Tooltip("Угол разброса в градусах (0 = идеальная точность)")]
     public float spreadAngle = 2f;
-    [Tooltip("Максимальный разброс при автоматической стрельбе")]
+    [Tooltip("Максимальный разброс")]
     public float maxSpreadAngle = 10f;
-    [Tooltip("Скорость увеличения разброса за выстрел (только для Auto)")]
+    [Tooltip("Скорость увеличения разброса за выстрел")]
     public float spreadIncreasePerShot = 0.5f;
     [Tooltip("Скорость восстановления точности в секунду")]
     public float spreadRecoveryRate = 2f;

@@ -18,8 +18,8 @@ MonoBehaviour:
   stoppingDistance: 1.5
   acceleration: 8
   angularSpeed: 360
-  startHealth: 30
-  attackDamage: 8
+  startHealth: 40
+  attackDamage: 12
   attackRange: 3
   attackCooldown: 1
   attackWindupTime: 0.5
@@ -36,7 +36,7 @@ MonoBehaviour:
   panicSpeed: 6
   retreatDuration: 2
   retreatStep: 4
-  stateChangeCooldown: 0.25
+  stateChangeCooldown: 0.1
   headshotMultiplier: 2
   bodyshotMultiplier: 1
   limbMultiplier: 0.7

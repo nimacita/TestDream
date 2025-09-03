@@ -67,6 +67,11 @@ public class WeaponHolder : MonoBehaviour
         weaponObj.SetActive(false);
     }
 
+    public bool IsCurrWeapon(int currWeaponInd)
+    {
+        return currWeaponInd == _currentWeaponIndex;
+    }
+
     public void EquipWeapon(int weaponIndex)
     {
         if (weaponIndex < 0 || weaponIndex >= weaponPrefabs.Count)
@@ -95,7 +100,7 @@ public class WeaponHolder : MonoBehaviour
 
         playerUIController.SetCurrentWeapon(_currentWeapon);
         _currentWeapon.gameObject.SetActive(true);
-        if (_currentWeapon.CurrentAmmo == 0) _currentWeapon.Reload();
+        //if (_currentWeapon.CurrentAmmo == 0) _currentWeapon.Reload();
     }
 
     private void DisableCurrWeapon()
@@ -112,20 +117,22 @@ public class WeaponHolder : MonoBehaviour
     public void EquipWeapon3() => EquipWeapon(2);
     public void EquipWeapon4() => EquipWeapon(3);
 
-    public void EquipNextWeapon()
+    public int EquipNextWeapon()
     {
-        if (weaponPrefabs.Count == 0) return;
+        if (weaponPrefabs.Count == 0) return -1;
 
         int nextIndex = (_currentWeaponIndex + 1) % weaponPrefabs.Count;
-        EquipWeapon(nextIndex);
+        return nextIndex;
+        //EquipWeapon(nextIndex);
     }
 
-    public void EquipPreviousWeapon()
+    public int EquipPreviousWeapon()
     {
-        if (weaponPrefabs.Count == 0) return;
+        if (weaponPrefabs.Count == 0) return -1;
 
         int previousIndex = (_currentWeaponIndex - 1 + weaponPrefabs.Count) % weaponPrefabs.Count;
-        EquipWeapon(previousIndex);
+        return previousIndex;
+        //EquipWeapon(previousIndex);
     }
 
     // Метод для проверки наличия оружия по индексу
