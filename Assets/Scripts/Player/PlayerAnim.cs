@@ -9,6 +9,9 @@ public class PlayerAnim : MonoBehaviour
     [SerializeField] private string right;
     [SerializeField] private string reload;
 
+    [Header("Triiger")]
+    [SerializeField] private string death;
+
     [Header("Animator Setting")]
     [SerializeField] private Animator animator;
 
@@ -46,5 +49,10 @@ public class PlayerAnim : MonoBehaviour
             if (animator.GetBool(reload))
                 animator.SetBool(reload, false);
         }
+    }
+
+    public void SetDeath()
+    {
+        animator.SetTrigger(death);
     }
 }

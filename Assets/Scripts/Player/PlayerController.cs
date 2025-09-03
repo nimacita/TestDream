@@ -287,10 +287,13 @@ public class PlayerController : InitializedBehaviour
 
     private void PlayerDie()
     {
+        if (_isDied) return;
+
         _isDied = true;
         _cameraController.PlayerDied();
         _currentWeapon.StopShooting();
         onPlayerDieded?.Invoke();
+        playerAnim.SetDeath();
     }
 
     #endregion

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2754eb6f62ee97499ea5c75bcf30193, type: 3}
+  m_Name: Enemy Scenarist Settings
+  m_EditorClassIdentifier: 
+  allEnemysType:
+  - enemyPrefab: {fileID: 60877999153943848, guid: bad11867f98ca214d81321f5980b0820, type: 3}
+    enemyBase: {fileID: 6611691191623720990, guid: bad11867f98ca214d81321f5980b0820, type: 3}
+    spawnChance: 0.5
+  - enemyPrefab: {fileID: 1989761277666655964, guid: 75373383231034f45b928a857985703f, type: 3}
+    enemyBase: {fileID: 7469283280008509606, guid: 75373383231034f45b928a857985703f, type: 3}
+    spawnChance: 0.2
+  startEnemyCount: 1
+  maxEnemyCount: 10
+  enemySpawnSpeedRange: {x: 2, y: 5}
+  minDistanceFromPlayer: 20

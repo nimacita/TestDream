@@ -1,16 +1,14 @@
 using UnityEngine;
 
-public class EnemyScenaristSettings : MonoBehaviour
+[CreateAssetMenu(menuName = "Enemys/Enemy Scenarist Settings")]
+public class EnemyScenaristSettings : ScriptableObject
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    [Header("Enemys")]
+    public EnemyObject[] allEnemysType;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    [Header("Settings")]
+    public int startEnemyCount = 5;
+    public int maxEnemyCount = 20;
+    public Vector2 enemySpawnSpeedRange = new Vector2(1f, 3f);
+    public float minDistanceFromPlayer = 10;
 }

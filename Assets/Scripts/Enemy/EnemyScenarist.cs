@@ -15,15 +15,12 @@ public class EnemyObject
 
 public class EnemyScenarist : InitializedBehaviour
 {
-    [Header("Enemys")]
-    [SerializeField] private EnemyObject[] allEnemysType;
-    private List<EnemyBase> enemyPool = new List<EnemyBase>();
 
     [Header("Settings")]
-    [SerializeField] private int startEnemyCount = 5;
-    [SerializeField] private int maxEnemyCount = 20;
-    [SerializeField] private Vector2 enemySpawnSpeed = new Vector2(1f, 3f);
-    [SerializeField] private float minDistanceFromPlayer = 10;
+    [SerializeField] private EnemyScenaristSettings settings;
+
+    [Header("Enemys")]
+    private List<EnemyBase> enemyPool = new List<EnemyBase>();
 
     [Header("Components")]
     [SerializeField] private Transform enemyHolder;
@@ -47,7 +44,7 @@ public class EnemyScenarist : InitializedBehaviour
     {
         spawningActive = true;
 
-        for (int i = 0; i < startEnemyCount; i++)
+        for (int i = 0; i < settings.startEnemyCount; i++)
         {
             SpawnEnemy();
         }
@@ -60,12 +57,12 @@ public class EnemyScenarist : InitializedBehaviour
         while (spawningActive)
         {
             int activeCount = enemyPool.FindAll(e => e.gameObject.activeSelf).Count;
-            if (activeCount < maxEnemyCount)
+            if (activeCount < settings.maxEnemyCount)
             {
                 SpawnEnemy();
             }
 
-            float delay = UnityEngine.Random.Range(enemySpawnSpeed.x, enemySpawnSpeed.y);
+            float delay = UnityEngine.Random.Range(settings.enemySpawnSpeedRange.x, settings.enemySpawnSpeedRange.y);
             yield return new WaitForSeconds(delay);
         }
     }
@@ -104,12 +101,12 @@ public class EnemyScenarist : InitializedBehaviour
     private EnemyObject GetRandomEnemyType()
     {
         float totalChance = 0;
-        foreach (var enemy in allEnemysType) totalChance += enemy.spawnChance;
+        foreach (var enemy in settings.allEnemysType) totalChance += enemy.spawnChance;
 
         float randomPoint = UnityEngine.Random.value * totalChance;
         float current = 0;
 
-        foreach (var enemy in allEnemysType)
+        foreach (var enemy in settings.allEnemysType)
         {
             current += enemy.spawnChance;
             if (randomPoint <= current)
@@ -123,7 +120,7 @@ public class EnemyScenarist : InitializedBehaviour
         Vector2 randomDirection2D = UnityEngine.Random.insideUnitCircle.normalized;
         Vector3 randomDirection = new Vector3(randomDirection2D.x, 0f, randomDirection2D.y);
 
-        float distance = UnityEngine.Random.Range(minDistanceFromPlayer, minDistanceFromPlayer * 2f);
+        float distance = UnityEngine.Random.Range(settings.minDistanceFromPlayer, settings.minDistanceFromPlayer * 2f);
 
         Vector3 potentialPoint = _playerTr.position + randomDirection * distance;
         potentialPoint.y = floor.transform.position.y + 1f;

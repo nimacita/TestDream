@@ -99,8 +99,12 @@ public abstract class EnemyBase : MonoBehaviour
         isGameEnded = true;
         isMove = false;
         InterruptAttack();
-        enemyAnimate.DisableAnim(EnemyAnim.Run);
-        if (gameObject.activeSelf) navMeshAgent.isStopped = true;
+
+        if (gameObject.activeSelf)
+        {
+            enemyAnimate.DisableAnim(EnemyAnim.Run);
+            navMeshAgent.isStopped = true;
+        }
     }
 
     protected abstract void HandleMovement();

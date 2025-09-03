@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class WeaponHolder : MonoBehaviour
 {
-    [Header("Weapon Prefabs")]
-    [SerializeField] private List<GameObject> weaponPrefabs = new List<GameObject>();
+    [Header("Weapon Setting")]
+    [SerializeField] private WeaponHolderSettings settings;
     private Transform weaponParent;
     private Camera playerCamera;
     private PlayerUIController playerUIController;
@@ -16,9 +16,8 @@ public class WeaponHolder : MonoBehaviour
     private int _currentWeaponIndex = -1;
 
     public Weapon CurrentWeapon => _currentWeapon;
-    public int WeaponCount => weaponPrefabs.Count;
+    public int WeaponCount => settings.weaponPrefabs.Count;
 
-    // Метод для принудительной инициализации (если нужно извне)
     public void Initialize(Camera cam, PlayerUIController uiController)
     {
         playerCamera = cam;
@@ -26,7 +25,6 @@ public class WeaponHolder : MonoBehaviour
         weaponParent = transform;
         CreateWeapons();
 
-        // Переинициализируем все оружия
         foreach (var weaponInstance in _weaponInstances.Values)
         {
             if (weaponInstance.gameObject.activeInHierarchy)
@@ -39,10 +37,9 @@ public class WeaponHolder : MonoBehaviour
 
     private void CreateWeapons()
     {
-        // Создаем экземпляры оружия из префабов
-        for (int i = 0; i < weaponPrefabs.Count; i++)
+        for (int i = 0; i < settings.weaponPrefabs.Count; i++)
         {
-            if (weaponPrefabs[i] != null && weaponPrefabs[i] != null)
+            if (settings.weaponPrefabs[i] != null && settings.weaponPrefabs[i] != null)
             {
                 CreateWeaponInstance(i);
             }
@@ -57,8 +54,7 @@ public class WeaponHolder : MonoBehaviour
     {
         if (_weaponInstances.ContainsKey(index)) return;
 
-        // Создаем экземпляр из префаба
-        GameObject weaponObj = Instantiate(weaponPrefabs[index], weaponParent);
+        GameObject weaponObj = Instantiate(settings.weaponPrefabs[index], weaponParent);
         weaponObj.transform.localPosition = Vector3.zero;
         weaponObj.transform.localRotation = Quaternion.identity;
         Weapon weaponComponent = weaponObj.GetComponent<Weapon>();
@@ -74,7 +70,7 @@ public class WeaponHolder : MonoBehaviour
 
     public void EquipWeapon(int weaponIndex)
     {
-        if (weaponIndex < 0 || weaponIndex >= weaponPrefabs.Count)
+        if (weaponIndex < 0 || weaponIndex >= settings.weaponPrefabs.Count)
         {
             Debug.LogWarning($"Неверный индекс оружия: {weaponIndex}");
             return;
@@ -100,7 +96,6 @@ public class WeaponHolder : MonoBehaviour
 
         playerUIController.SetCurrentWeapon(_currentWeapon);
         _currentWeapon.gameObject.SetActive(true);
-        //if (_currentWeapon.CurrentAmmo == 0) _currentWeapon.Reload();
     }
 
     private void DisableCurrWeapon()
@@ -119,29 +114,27 @@ public class WeaponHolder : MonoBehaviour
 
     public int EquipNextWeapon()
     {
-        if (weaponPrefabs.Count == 0) return -1;
+        if (settings.weaponPrefabs.Count == 0) return -1;
 
-        int nextIndex = (_currentWeaponIndex + 1) % weaponPrefabs.Count;
+        int nextIndex = (_currentWeaponIndex + 1) % settings.weaponPrefabs.Count;
         return nextIndex;
         //EquipWeapon(nextIndex);
     }
 
     public int EquipPreviousWeapon()
     {
-        if (weaponPrefabs.Count == 0) return -1;
+        if (settings.weaponPrefabs.Count == 0) return -1;
 
-        int previousIndex = (_currentWeaponIndex - 1 + weaponPrefabs.Count) % weaponPrefabs.Count;
+        int previousIndex = (_currentWeaponIndex - 1 + settings.weaponPrefabs.Count) % settings.weaponPrefabs.Count;
         return previousIndex;
         //EquipWeapon(previousIndex);
     }
 
-    // Метод для проверки наличия оружия по индексу
     public bool HasWeapon(int index)
     {
-        return index >= 0 && index < weaponPrefabs.Count && weaponPrefabs[index] != null;
+        return index >= 0 && index < settings.weaponPrefabs.Count && settings.weaponPrefabs[index] != null;
     }
 
-    // Метод для получения текущего количества патронов оружия по индексу
     public int GetWeaponAmmo(int index)
     {
         if (_weaponInstances.ContainsKey(index))
@@ -151,46 +144,40 @@ public class WeaponHolder : MonoBehaviour
         return 0;
     }
 
-    // Метод для добавления нового оружия во время игры
     public void AddWeapon(GameObject newWeaponPrefab)
     {
         if (newWeaponPrefab == null || newWeaponPrefab == null) return;
 
-        weaponPrefabs.Add(newWeaponPrefab);
-        int newIndex = weaponPrefabs.Count - 1;
+        settings.weaponPrefabs.Add(newWeaponPrefab);
+        int newIndex = settings.weaponPrefabs.Count - 1;
         CreateWeaponInstance(newIndex);
     }
 
-    // Метод для удаления оружия
     public void RemoveWeapon(int index)
     {
-        if (index < 0 || index >= weaponPrefabs.Count) return;
+        if (index < 0 || index >= settings.weaponPrefabs.Count) return;
 
-        // Если удаляем текущее оружие - переключаемся на другое
         if (index == _currentWeaponIndex)
         {
             DisableCurrWeapon();
             _currentWeapon = null;
             _currentWeaponIndex = -1;
 
-            // Пытаемся переключиться на следующее оружие
-            if (weaponPrefabs.Count > 1)
+            if (settings.weaponPrefabs.Count > 1)
             {
-                int nextIndex = (index + 1) % weaponPrefabs.Count;
+                int nextIndex = (index + 1) % settings.weaponPrefabs.Count;
                 EquipWeapon(nextIndex);
             }
         }
 
-        // Удаляем экземпляр оружия
         if (_weaponInstances.ContainsKey(index))
         {
             Destroy(_weaponInstances[index].gameObject);
             _weaponInstances.Remove(index);
         }
 
-        weaponPrefabs.RemoveAt(index);
+        settings.weaponPrefabs.RemoveAt(index);
 
-        // Переиндексируем словарь
         ReindexWeaponInstances();
     }
 
@@ -198,11 +185,11 @@ public class WeaponHolder : MonoBehaviour
     {
         Dictionary<int, Weapon> newInstances = new Dictionary<int, Weapon>();
 
-        for (int i = 0; i < weaponPrefabs.Count; i++)
+        for (int i = 0; i < settings.weaponPrefabs.Count; i++)
         {
             foreach (var kvp in _weaponInstances)
             {
-                if (kvp.Value.Settings == weaponPrefabs[i].GetComponent<Weapon>().Settings)
+                if (kvp.Value.Settings == settings.weaponPrefabs[i].GetComponent<Weapon>().Settings)
                 {
                     newInstances[i] = kvp.Value;
                     break;
@@ -213,13 +200,11 @@ public class WeaponHolder : MonoBehaviour
         _weaponInstances = newInstances;
     }
 
-    // Метод для получения всех экземпляров оружия (для сохранения)
     public Dictionary<int, Weapon> GetAllWeaponInstances()
     {
         return new Dictionary<int, Weapon>(_weaponInstances);
     }
 
-    // Метод для проверки, инициализирован ли holder
     public bool IsInitialized()
     {
         return playerCamera != null && playerUIController != null;

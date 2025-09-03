@@ -42,7 +42,7 @@ public class EnemyMelle : EnemyBase
     protected override void IsMoving()
     {
         if (navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh
-            && isAlive && !isInWindup && !isAttacking && !isTakingDamage && !_isClosedPlayer)
+            && isAlive && !isInWindup && !isAttacking && !isTakingDamage && !_isClosedPlayer && !isGameEnded)
         {
             isMove = true;
             navMeshAgent.isStopped = false;
