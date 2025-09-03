@@ -17,7 +17,7 @@ public class EnemyMelle : EnemyBase
 
     protected override void HandleMovement()
     {
-        if (!isGameEnded) return;
+        if (isGameEnded) return;
         float distance = Vector3.Distance(transform.position, player.position);
 
         if (distance <= settings.attackRange && !isAttacking && !isInWindup)

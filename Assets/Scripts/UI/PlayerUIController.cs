@@ -16,6 +16,10 @@ public class PlayerUIController : InitializedBehaviour
     [SerializeField] private float lerpSpeed = 0.5f;
     [SerializeField] private float spreadProportionCoefficient = 1.2f;
 
+    [Header("Aim Hit Settings")]
+    [SerializeField] private Animation aimHitTargetAnim;
+    [SerializeField] private Animation aimHitHeadTargetAnim;
+
     [Header("Game Over")]
     [SerializeField] private GameObject gameOverView;
     [SerializeField] private TMP_Text currScoreTxt;
@@ -41,7 +45,9 @@ public class PlayerUIController : InitializedBehaviour
     {
         UpdateReloadProgress(1f);
         gameOverView.SetActive(false);
+
         restartBtn.onClick.AddListener(RestartBtnClick);
+        EnemyBase.onGotDamage += PlayHitAnim;
     }
 
     void Update()
@@ -144,8 +150,25 @@ public class PlayerUIController : InitializedBehaviour
 
     #endregion
 
+    #region Target Hit
+
+    public void PlayHitAnim(bool isHead = false)
+    {
+        if (isHead)
+        {
+            aimHitHeadTargetAnim.Play();
+        }
+        else
+        {
+            aimHitTargetAnim.Play();
+        }
+    }
+
+    #endregion
+
     private void OnDestroy()
     {
+        EnemyBase.onGotDamage -= PlayHitAnim;
         restartBtn.onClick.RemoveListener(RestartBtnClick);
     }
 }

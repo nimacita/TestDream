@@ -40,7 +40,7 @@ public class EnemyScenarist : InitializedBehaviour
         _playerTr = _playerController.gameObject.transform;
         floorSurface = floor.GetComponent<NavMeshSurface>();
 
-        //StartEnemySpawn();
+        StartEnemySpawn();
     }
 
     private void StartEnemySpawn()

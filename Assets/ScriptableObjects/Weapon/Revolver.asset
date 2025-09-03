@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb7e939e737a7914089790d9b43f90ba, type: 3}
   m_Name: Revolver
   m_EditorClassIdentifier: 
-  weaponName: Revolver
+  weaponName: Hunter Riffle
   fireMode: 0
   damage: 12
   fireRate: 1

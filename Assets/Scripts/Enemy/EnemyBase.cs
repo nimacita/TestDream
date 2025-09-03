@@ -28,6 +28,7 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected float lastAttackTime;
 
+    public static Action<bool> onGotDamage;
     public static Action<float> onPlayerDamaged;
     public static Action onEnemyDied;
     public EnemySettings Settings { get => settings; }
@@ -35,6 +36,7 @@ public abstract class EnemyBase : MonoBehaviour
     public virtual void Initialize(Transform playerTransform)
     {
         player = playerTransform;
+        isGameEnded = false;
 
         if (navMeshAgent == null)
             navMeshAgent = GetComponent<NavMeshAgent>();
@@ -139,7 +141,9 @@ public abstract class EnemyBase : MonoBehaviour
         if (currentHealth <= 0)
             Die();
 
-        if (IsHeadshot(hitTrigger))
+        bool isHead = IsHeadshot(hitTrigger);
+        onGotDamage?.Invoke(isHead);
+        if (isHead)
         {
             InterruptAttack();
             PlayDamageAnimation();

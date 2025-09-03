@@ -72,7 +72,7 @@ public class EnemyRange : EnemyBase
     protected override void HandleMovement()
     {
         if (!CanProcessMovement()) return;
-        if (!isGameEnded) return;
+        if (isGameEnded) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 

@@ -29,6 +29,9 @@ public class GameScenarist : InitializedBehaviour
         _playerUIController = GetDependency<PlayerUIController>(dependencies);
         _cursorController = GetDependency<CursorController>(dependencies);
 
+        _currScore = 0;
+        _playerUIController.UpdateRecord(_currScore);
+
         _playerController.onPlayerDieded += GameEnd;
         EnemyBase.onEnemyDied += PlusRecord;
     }
